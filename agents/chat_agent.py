@@ -6,6 +6,7 @@ from personality.personality_config import PersonalityConfig
 from core.session_manager import SessionManager
 from graphs.chat_graph import ChatWorkflow
 from utils.error_handling import NodeExecutionError, WorkflowError
+from memory.knowledge_memory import KnowledgeMemory
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,13 +17,15 @@ class ChatAgent(BaseAgent):
         self.personality = personality
         self.openai_chat = OpenAIChat()
         self.tts_model = TextToSpeechModel()
-        self.session_manager = SessionManager()
-        self.workflow = ChatWorkflow(self.openai_chat, self.personality)
+        self.session_manager = SessionManager() #short term memory
+        self.knowledge_memory = KnowledgeMemory(f"knowledge_base_{agent_id}") #long term memory
+        self.workflow = ChatWorkflow(self.openai_chat, self.personality, self.knowledge_memory)
         self.graph = self.workflow.create_graph()
-    
+
     async def initialize(self) -> None:
         """Initialize agent resources"""
         await self.session_manager.initialize()
+        await self.knowledge_memory.initialize()
     
     async def process_message(
         self,

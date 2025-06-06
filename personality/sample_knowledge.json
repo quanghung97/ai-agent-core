@@ -1,0 +1,142 @@
+[
+    {
+        "id": "doc_001",
+        "text": "Doraemon is a robotic cat sent from the 22nd century to help a young boy named Nobita Nobi navigate life's challenges.",
+        "metadata": {
+            "topic": "Character Overview",
+            "source": "Doraemon Wiki",
+            "tags": [
+                "robot",
+                "time travel",
+                "anime"
+            ],
+            "date": "2024-06-01"
+        }
+    },
+    {
+        "id": "doc_002",
+        "text": "Nobita is often portrayed as lazy and academically poor, but he has a kind heart and values friendship deeply.",
+        "metadata": {
+            "topic": "Character Overview",
+            "source": "Doraemon Wiki",
+            "tags": [
+                "human",
+                "friendship",
+                "school life"
+            ],
+            "date": "2024-06-01"
+        }
+    },
+    {
+        "id": "doc_003",
+        "text": "Doraemon's most iconic gadget is the 'Anywhere Door', which allows the user to travel instantly to any location they imagine.",
+        "metadata": {
+            "topic": "Gadgets",
+            "source": "Gadget Catalog",
+            "tags": [
+                "technology",
+                "portal",
+                "science fiction"
+            ],
+            "date": "2024-06-01"
+        }
+    },
+    {
+        "id": "doc_004",
+        "text": "Shizuka is Nobita’s close friend and often portrayed as intelligent, kind, and a moral influence on the group.",
+        "metadata": {
+            "topic": "Character Overview",
+            "source": "Fan Site",
+            "tags": [
+                "friendship",
+                "female character",
+                "school life"
+            ],
+            "date": "2024-06-01"
+        }
+    },
+    {
+        "id": "doc_005",
+        "text": "Gian is known for his strength and aggressive behavior but has a surprising passion for singing, despite being terrible at it.",
+        "metadata": {
+            "topic": "Character Overview",
+            "source": "Doraemon Wiki",
+            "tags": [
+                "bully",
+                "music",
+                "character development"
+            ],
+            "date": "2024-06-01"
+        }
+    },
+    {
+        "id": "doc_006",
+        "text": "Suneo is a boastful boy who often flaunts his wealth and gadgets, but sometimes shows loyalty to his friends.",
+        "metadata": {
+            "topic": "Character Overview",
+            "source": "Doraemon Wiki",
+            "tags": [
+                "wealth",
+                "vanity",
+                "friendship"
+            ],
+            "date": "2024-06-01"
+        }
+    },
+    {
+        "id": "doc_007",
+        "text": "The 'Time Machine' stored in Nobita's drawer is used for time travel adventures and is a core element of the Doraemon series.",
+        "metadata": {
+            "topic": "Gadgets",
+            "source": "Gadget Catalog",
+            "tags": [
+                "time machine",
+                "science fiction",
+                "core element"
+            ],
+            "date": "2024-06-01"
+        }
+    },
+    {
+        "id": "doc_008",
+        "text": "Doraemon has been featured in numerous movies that explore themes of courage, friendship, and the power of imagination.",
+        "metadata": {
+            "topic": "Media and Culture",
+            "source": "Movie Guide",
+            "tags": [
+                "anime movie",
+                "themes",
+                "Japanese culture"
+            ],
+            "date": "2024-06-01"
+        }
+    },
+    {
+        "id": "doc_009",
+        "text": "Despite being a children's anime, Doraemon subtly explores complex topics like morality, responsibility, and technology's role in society.",
+        "metadata": {
+            "topic": "Themes",
+            "source": "Critical Review",
+            "tags": [
+                "ethics",
+                "sci-fi",
+                "family"
+            ],
+            "date": "2024-06-01"
+        }
+    },
+    {
+        "id": "doc_010",
+        "text": "The Doraemon franchise remains influential in Japanese pop culture and continues to inspire generations with its imaginative storytelling.",
+        "metadata": {
+            "topic": "Cultural Impact",
+            "source": "Cultural Journal",
+            "tags": [
+                "pop culture",
+                "legacy",
+                "Japan"
+            ],
+            "date": "2024-06-01"
+        }
+    }
+]

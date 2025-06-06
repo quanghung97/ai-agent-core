@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
     REDIS_PASSWORD: Optional[str] = None
+
+    #ChromaDB Config
+    CHROMADB_HOST: str = "localhost"
+    CHROMADB_PORT: int = 8000
     
     # Agent Config
     MAX_CONCURRENT_USERS: int = 1000

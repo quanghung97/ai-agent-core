@@ -6,6 +6,7 @@ from models.openai_models import OpenAIChat
 from models.search_models import SearchModel
 from personality.personality_config import PersonalityConfig
 from utils.error_handling import WorkflowError, with_retry, RetryableError, NodeExecutionError
+from memory.knowledge_memory import KnowledgeMemory
 import logging
 
 logger = logging.getLogger(__name__)
@@ -20,14 +21,15 @@ class ChatState(TypedDict):
     next: Literal["validate", "classify", "memory", "chat", "search", "end"]
 
 class ChatWorkflow(BaseWorkflow):
-    def __init__(self, openai_chat: OpenAIChat, personality: PersonalityConfig):
+    def __init__(self, openai_chat: OpenAIChat, personality: PersonalityConfig, knowledge_memory: KnowledgeMemory):
         super().__init__()
         self.openai_chat = openai_chat
         self.search_model = SearchModel()
         self.personality = personality
+        self.knowledge_memory = knowledge_memory
         self.nodes = WorkflowNodes()
         self.graph = None
-    
+
     def create_graph(self) -> Graph:
         """Create enhanced workflow graph with search capability"""
         # Create nodes
@@ -166,9 +168,8 @@ class ChatWorkflow(BaseWorkflow):
 
     @with_retry(max_retries=2, delay=1.0)
     async def process_search(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """Process search when needed"""
+        """Process search using both knowledge base and external search"""
         try:
-            # Get last user message
             last_message = next(
                 (msg["content"] for msg in reversed(state["messages"]) 
                  if msg["role"] == "user"),
@@ -176,10 +177,23 @@ class ChatWorkflow(BaseWorkflow):
             )
 
             if last_message:
-                # Perform search
-                search_results = await self.search_model.search(last_message)
-                state["search_results"] = search_results
-                state["next"] = "chat"  # Return to chat with results
+                # First, query knowledge base
+                knowledge_results = await self.knowledge_memory.query_knowledge(last_message)
+                print(f"Knowledge base results: {knowledge_results}")
+                
+                if knowledge_results and knowledge_results[0]["relevance_score"] > 0.8:
+                    # Use knowledge base results if highly relevant
+                    state["search_results"] = {
+                        "content": knowledge_results[0]["content"],
+                        "source": "knowledge_base",
+                        "metadata": knowledge_results[0]["metadata"]
+                    }
+                else:
+                    # Fall back to external search
+                    search_results = await self.search_model.search(last_message)
+                    state["search_results"] = search_results
+
+                state["next"] = "chat"
                 return state
             
             state["next"] = "end"

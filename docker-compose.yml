@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  chroma:
+    image: chromadb/chroma:1.0.12
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/chromadb:/chroma/chroma
