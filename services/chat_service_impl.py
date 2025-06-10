@@ -7,14 +7,48 @@ from services.chats.chat_service_pb2_grpc import ChatServiceServicer
 from agents.chat_agent import ChatAgent
 from personality.personality_config import PersonalityConfig, PersonalityTraits
 import logging
+import json
 
 logger = logging.getLogger(__name__)
+
+# Sample knowledge data for different domains
+sample_knowledge = [
+    {
+        "id": "news_001",
+        "text": "In 2025, global trade tensions escalated as new tariff policies were implemented between major economies.",
+        "metadata": {
+            "topic": "Economics",
+            "source": "Global News",
+            "tags": "trade,economy,international relations",
+            "date": "2025-06-01"
+        }
+    },
+    {
+        "id": "news_002",
+        "text": "The technology sector saw significant growth in AI adoption across industries, with particular focus on responsible AI development.",
+        "metadata": {
+            "topic": "Technology",
+            "source": "Tech Review",
+            "tags": "AI,technology,industry",
+            "date": "2025-06-01"
+        }
+    },
+    {
+        "id": "news_003",
+        "text": "Climate change initiatives gained momentum as countries accelerated their transition to renewable energy sources.",
+        "metadata": {
+            "topic": "Environment",
+            "source": "Climate Report",
+            "tags": "climate,energy,sustainability",
+            "date": "2025-06-01"
+        }
+    },
+]
 
 class ChatServiceImpl(ChatServiceServicer):
     """Implementation of gRPC Chat Service"""
     
     def __init__(self):
-        # TODO: load personality configuration from Database
         self.personality = PersonalityConfig(
             name="Luna",
             gender="female",
@@ -31,16 +65,43 @@ class ChatServiceImpl(ChatServiceServicer):
             artistic_style="modern",
         )
         self.chat_agent = ChatAgent("grpc-agent", self.personality)
-        # Initialize in constructor
-        asyncio.create_task(self.initialize())
+        self._initialized = False
+        self._init_lock = asyncio.Lock()
+        
+        # Start initialization
+        asyncio.create_task(self.ensure_initialized())
 
-    async def initialize(self):
-        """Initialize the chat agent"""
-        await self.chat_agent.initialize()
+    async def ensure_initialized(self):
+        """Ensure the service is initialized only once"""
+        async with self._init_lock:
+            if not self._initialized:
+                try:
+                    # Initialize chat agent
+                    await self.chat_agent.initialize()
+                    
+                    # Load knowledge base
+                    await self.chat_agent.knowledge_memory.load_knowledge_base(sample_knowledge)
+                    logger.info("Knowledge base loaded successfully")
+                    
+                    self._initialized = True
+                    logger.info("Chat service initialization completed")
+                except Exception as e:
+                    logger.error(f"Failed to initialize chat service: {str(e)}")
+                    raise
+
+    async def cleanup(self):
+        """Cleanup resources"""
+        if self.chat_agent and self.chat_agent.knowledge_memory:
+            await self.chat_agent.knowledge_memory.cleanup()
+            logger.info("Chat service resources cleaned up")
 
     async def ProcessMessage(self, request: ChatRequest, context):
         """Process a single chat message - async implementation"""
         try:
+            # Ensure service is initialized
+            if not self._initialized:
+                await self.ensure_initialized()
+
             tts_settings = None
             if request.tts_settings and request.tts_settings.enable_tts:
                 tts_settings = {
