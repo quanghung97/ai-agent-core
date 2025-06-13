@@ -2,10 +2,11 @@ import grpc
 import asyncio
 from concurrent import futures
 from typing import Dict, Any
-from services.chats.chat_service_pb2 import ChatRequest, ChatResponse, MetadataMessage, TTSSettings, VoiceSettings
+from services.chats.chat_service_pb2 import ChatRequest, ChatResponse, MetadataMessage
 from services.chats.chat_service_pb2_grpc import ChatServiceServicer
 from agents.chat_agent import ChatAgent
-from personality.personality_config import PersonalityConfig, PersonalityTraits
+from personality.personality_config import PersonalityConfig
+from memory.redis_store import RedisStore
 import logging
 import json
 
@@ -49,79 +50,53 @@ class ChatServiceImpl(ChatServiceServicer):
     """Implementation of gRPC Chat Service"""
     
     def __init__(self):
-        self.personality = PersonalityConfig(
-            name="Luna",
-            gender="female",
-            age=25,
-            personality_traits=PersonalityTraits(
-                friendliness=0.9,
-                humor=0.7,
-                formality=0.3,
-                creativity=0.8,
-                detail_oriented=0.6,
-            ),
-            interests=["technology", "music", "travel"],
-            communication_style="casual_friendly",
-            artistic_style="modern",
-        )
-        self.chat_agent = ChatAgent("grpc-agent", self.personality)
+        # Redis setup
+        self.redis_store = RedisStore()
+        
+        # Cache for active chat agents
+        self._chat_agents: Dict[str, ChatAgent] = {}
         self._initialized = False
         self._init_lock = asyncio.Lock()
-        
-        # Start initialization
-        asyncio.create_task(self.ensure_initialized())
 
-    async def ensure_initialized(self):
-        """Ensure the service is initialized only once"""
-        async with self._init_lock:
-            if not self._initialized:
-                try:
-                    # Initialize chat agent
-                    await self.chat_agent.initialize()
-                    
-                    # Load knowledge base
-                    await self.chat_agent.knowledge_memory.load_knowledge_base(sample_knowledge)
-                    logger.info("Knowledge base loaded successfully")
-                    
-                    self._initialized = True
-                    logger.info("Chat service initialization completed")
-                except Exception as e:
-                    logger.error(f"Failed to initialize chat service: {str(e)}")
-                    raise
+    async def get_or_create_chat_agent(self, agent_id: str) -> ChatAgent:
+        """Get existing chat agent or create new one"""
+        if agent_id not in self._chat_agents:
+            # Get agent config from Redis
+            config_data = await self.redis_store.get(f"agent:{agent_id}:config")
+            if not config_data:
+                raise ValueError(f"Agent with id {agent_id} not found in Redis")
+            
+            # Convert Redis data to PersonalityConfig
+            config = PersonalityConfig(**config_data.get('value', {}))
+
+            # Create new chat agent
+            chat_agent = ChatAgent(agent_id, config)
+            await chat_agent.initialize()
+            await chat_agent.knowledge_memory.load_knowledge_base(sample_knowledge)
+            self._chat_agents[agent_id] = chat_agent
+
+        return self._chat_agents[agent_id]
 
     async def cleanup(self):
-        """Cleanup resources"""
-        if self.chat_agent and self.chat_agent.knowledge_memory:
-            await self.chat_agent.knowledge_memory.cleanup()
-            logger.info("Chat service resources cleaned up")
+        """Cleanup resources for all agents"""
+        for agent in self._chat_agents.values():
+            if agent.knowledge_memory:
+                await agent.knowledge_memory.cleanup()
+        
+        self._chat_agents.clear()
 
     async def ProcessMessage(self, request: ChatRequest, context):
-        """Process a single chat message - async implementation"""
+        """Process a single chat message with specified agent"""
         try:
-            # Ensure service is initialized
-            if not self._initialized:
-                await self.ensure_initialized()
+            # Get or create chat agent for the specified agent_id
+            agent_id = request.agent_id  # Add agent_id to ChatRequest proto
+            chat_agent = await self.get_or_create_chat_agent(agent_id)
 
-            tts_settings = None
-            if request.tts_settings and request.tts_settings.enable_tts:
-                tts_settings = {
-                    'enable_tts': request.tts_settings.enable_tts,
-                    'voice_id': request.tts_settings.voice_id,
-                    'voice_settings': {
-                        'stability': request.tts_settings.voice_settings.stability,
-                        'similarity_boost': request.tts_settings.voice_settings.similarity_boost,
-                        'style': request.tts_settings.voice_settings.style,
-                        'use_speaker_boost': request.tts_settings.voice_settings.use_speaker_boost,
-                        'speed': request.tts_settings.voice_settings.speed
-                    }
-                }
-
-            result = await self.chat_agent.process_message(
+            result = await chat_agent.process_message(
                 user_id=request.user_id,
                 message=request.message,
                 session_id=request.session_id,
-                context=dict(request.context),
-                tts_settings=tts_settings
+                context=dict(request.context)
             )
             
             metadata = MetadataMessage(

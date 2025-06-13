@@ -6,7 +6,7 @@ from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Opti
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class ChatRequest(_message.Message):
-    __slots__ = ("user_id", "message", "session_id", "context", "tts_settings")
+    __slots__ = ("user_id", "message", "session_id", "agent_id", "context", "tts_settings")
     class ContextEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -17,14 +17,16 @@ class ChatRequest(_message.Message):
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    AGENT_ID_FIELD_NUMBER: _ClassVar[int]
     CONTEXT_FIELD_NUMBER: _ClassVar[int]
     TTS_SETTINGS_FIELD_NUMBER: _ClassVar[int]
     user_id: str
     message: str
     session_id: str
+    agent_id: str
     context: _containers.ScalarMap[str, str]
     tts_settings: TTSSettings
-    def __init__(self, user_id: _Optional[str] = ..., message: _Optional[str] = ..., session_id: _Optional[str] = ..., context: _Optional[_Mapping[str, str]] = ..., tts_settings: _Optional[_Union[TTSSettings, _Mapping]] = ...) -> None: ...
+    def __init__(self, user_id: _Optional[str] = ..., message: _Optional[str] = ..., session_id: _Optional[str] = ..., agent_id: _Optional[str] = ..., context: _Optional[_Mapping[str, str]] = ..., tts_settings: _Optional[_Union[TTSSettings, _Mapping]] = ...) -> None: ...
 
 class TTSSettings(_message.Message):
     __slots__ = ("enable_tts", "voice_id", "voice_settings")
