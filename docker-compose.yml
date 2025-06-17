@@ -1,5 +1,18 @@
 version: '3.8'
 services:
+  grpc-server:
+    build: .
+    container_name: grpc-server
+    ports:
+      - "${GRPC_PORT}:50051"
+    environment:
+      - GRPC_HOST=0.0.0.0
+      - GRPC_PORT=50051
+      - REDIS_HOST=redis
+      - CHROMADB_HOST=chroma
+    depends_on:
+      - redis
+      - chroma
   chroma:
     image: chromadb/chroma:1.0.12
     environment:
