@@ -7,6 +7,10 @@ class Settings(BaseSettings):
     APP_NAME: str = "AI Agent Core"
     DEBUG: bool = False
     
+    # GRPC Config
+    GRPC_HOST: str = "localhost"
+    GRPC_PORT: int = 50051
+    
     # OpenAI Config
     OPENAI_API_KEY: str
     OPENAI_MODEL: str = "gpt-4.1-mini"
