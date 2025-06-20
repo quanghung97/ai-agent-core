@@ -22,6 +22,7 @@ class OpenAIChat:
                 temperature=temperature,
                 max_tokens=max_tokens or 1000
             )
+
             return response.choices[0].message.content
         except Exception as e:
             raise Exception(f"OpenAI API error: {str(e)}")

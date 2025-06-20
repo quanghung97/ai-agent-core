@@ -250,6 +250,8 @@ python main.py
 ```bash
 cd d:\ai-agent\ai-agent-core
 python -m grpc_tools.protoc -I../ai-agent-proto --python_out=. --grpc_python_out=. --pyi_out=. ../ai-agent-proto/services/chats/chat_service.proto
+
+python -m grpc_tools.protoc -I../ai-agent-proto --python_out=. --grpc_python_out=. --pyi_out=. ../ai-agent-proto/services/vector_store/vector_store_service.proto
 ```
 
 ## ⚙️ Cấu hình

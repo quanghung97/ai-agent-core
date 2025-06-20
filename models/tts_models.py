@@ -80,7 +80,7 @@ class TextToSpeechModel:
                     stability=voice_settings.get("stability", 0.7),
                     similarity_boost=voice_settings.get("similarity_boost", 0.7),
                     style=voice_settings.get("style", 0.0),
-                    use_speaker_boost=voice_settings.get("use_speaker_boost", True),
+                    use_speaker_boost=getattr(voice_settings, 'use_speaker_boost', False),
                     speed=voice_settings.get("speed", 1.0)
                 )
 

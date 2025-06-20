@@ -9,6 +9,8 @@ from services.chats.chat_service_pb2 import DESCRIPTOR
 from grpc_reflection.v1alpha import reflection
 import logging
 from config.settings import get_settings
+from services.vector_store.vector_store_service_pb2_grpc import add_VectorStoreServiceServicer_to_server
+from services.vector_store_service_impl import VectorStoreServiceImpl
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -31,9 +33,13 @@ class GrpcServer:
             ]
         )
         
-        # Create and add service
+        # Add Chat Service
         service = ChatServiceImpl()
         add_ChatServiceServicer_to_server(service, self.server)
+        
+        # Add Vector Store Service
+        vector_store_service = VectorStoreServiceImpl()
+        add_VectorStoreServiceServicer_to_server(vector_store_service, self.server)
         
         # Enable reflection
         SERVICE_NAMES = (

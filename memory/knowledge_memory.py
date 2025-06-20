@@ -79,7 +79,8 @@ class KnowledgeMemory:
 
                 print("ChromaDB client initialized")
             self.collection = self.client.get_or_create_collection(
-                name=self.collection_name
+                name=self.collection_name,
+                metadata={"hnsw:space": "cosine"}
             )
         except Exception as e:
             raise Exception(f"Failed to initialize collection: {str(e)}")
@@ -142,7 +143,7 @@ class KnowledgeMemory:
         except Exception as e:
             print("Failed to add to collection:", e)
 
-    async def query_knowledge(self, query: str, n_results: int = 3) -> List[Dict[str, Any]]:
+    async def query_knowledge(self, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
         """Query the knowledge base using semantic search"""
         if not self.collection:
             await self.initialize()

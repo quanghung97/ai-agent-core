@@ -7,7 +7,10 @@ from models.search_models import SearchModel
 from personality.personality_config import PersonalityConfig
 from utils.error_handling import WorkflowError, with_retry, RetryableError, NodeExecutionError
 from memory.knowledge_memory import KnowledgeMemory
+from datetime import datetime
+import pytz
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +38,6 @@ class ChatWorkflow(BaseWorkflow):
         # Create nodes
         validate_node = WorkflowNode(self.nodes.validate_input, NodeType.VALIDATION)
         intent_node = WorkflowNode(self.nodes.classify_intent, NodeType.CLASSIFICATION)
-        memory_node = WorkflowNode(self.nodes.update_memory, NodeType.MEMORY)
         chat_node = WorkflowNode(self.process_chat, NodeType.CHAT)
         search_node = WorkflowNode(self.process_search, NodeType.SEARCH)        
 
@@ -45,7 +47,6 @@ class ChatWorkflow(BaseWorkflow):
         # Add nodes
         workflow.add_node("validate", validate_node)
         workflow.add_node("classify", intent_node)
-        workflow.add_node("memory", memory_node)
         workflow.add_node("chat", chat_node)
         workflow.add_node("search", search_node)
         
@@ -58,30 +59,37 @@ class ChatWorkflow(BaseWorkflow):
 
         workflow.add_edge(START, "validate")
         workflow.add_edge("validate", "classify")
-        workflow.add_edge("classify", "memory")
-        workflow.add_edge("memory", "chat")
+        workflow.add_edge("classify", "chat")  # Updated: classify goes directly to chat
         workflow.add_conditional_edges("chat", route_back_to_chat)
-        workflow.add_edge("search", "chat")  # Search can go back to chat
+        workflow.add_edge("search", "chat")
         
         self.graph = workflow.compile()
         return self.graph
     
+    def format_error_response(self, state: Dict[str, Any], error_message: str) -> Dict[str, Any]:
+        """Format error response in a consistent way"""
+        return {
+            "messages": state.get("messages", []),
+            "response": {
+                "response": "I apologize, but I encountered an error. Please try again.",
+                "type": "error",
+            },
+            "memory": state.get("memory", {}),
+            "searched": state.get("searched", False),
+            "search_results": None,
+            "next": "end"
+        }
+
     async def run(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Run workflow with search capability"""
         if not self.graph:
             self.graph = self.create_graph()
             
-        # Initialize state
+        # Initialize state with context
         workflow_state = {
             "messages": state.get("messages", []),
             "intent": "",
-            "memory": {
-                "turn_count": 0,
-                "topics": [],
-                "sentiment": "neutral",
-                "last_intent": "",
-                "session_data": {}
-            },
+            "context": state.get("context", {}),
             "response": {
                 "response": "",
                 "type": "text",
@@ -101,11 +109,11 @@ class ChatWorkflow(BaseWorkflow):
 
     @with_retry(max_retries=2, delay=1.0)
     async def process_chat(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """Process chat with search capability"""
+        """Process chat with recent conversation history"""
         try:
             messages = state.get("messages", [])
-            print(f"Processing chat with messages: {messages}")
-            memory = state.get("memory", {})
+            context = state.get("context", {})
+            print("check context data", context)
             
             # Add system message if not present
             if not any(msg.get("role") == "system" for msg in messages):
@@ -113,6 +121,32 @@ class ChatWorkflow(BaseWorkflow):
                     "role": "system",
                     "content": self.personality.generate_prompt()
                 })
+
+            # Add recent last 3 conversations if available
+            if "recent_conversations" in context:
+                recent_convs = context["recent_conversations"]
+                print(f"Recent conversations1111111: {recent_convs}")
+                if recent_convs:
+                    recent_history_prompt = "Recent conversation history:\n"
+                    for conv in recent_convs:
+                        recent_history_prompt += f"User: {conv['message']}\nAssistant: {conv['response']}\n"
+                    messages.append({
+                        "role": "system",
+                        "content": recent_history_prompt
+                    })
+
+            # Add relevant conversation history if available
+            if "relevant_history" in context:
+                history_prompt = "Previous relevant conversations:\n"
+                for history in context["relevant_history"]:
+                    if history["relevance_score"] > 0.4:  # Only include highly relevant history
+                        history_prompt += f"{history['conversation']}\n"
+
+                if history_prompt !="Previous relevant conversations:\n":
+                    messages.append({
+                        "role": "system",
+                        "content": history_prompt
+                    })
 
             # If we have search results, add them to context
             if state.get("search_results"):
@@ -122,6 +156,7 @@ class ChatWorkflow(BaseWorkflow):
                 })
 
             # Generate response
+            print(f"Processing messages: {messages}")
             response = await self.openai_chat.generate_response(
                 messages=messages,
                 temperature=0.7
@@ -145,18 +180,18 @@ class ChatWorkflow(BaseWorkflow):
                 "content": response
             })
 
+            # Add timestamp to response
+            current_time = datetime.now(pytz.UTC).isoformat()
+            
             return {
                 "messages": messages,
                 "response": {
                     "response": response,
                     "type": "text",
                     "metadata": {
-                        "intent": state.get("intent", "general"),
-                        "memory": memory,
-                        "searched": state.get("searched", False)
+                        "timestamp": current_time,
                     }
                 },
-                "memory": memory,
                 "searched": state.get("searched", False),
                 "search_results": state.get("search_results"),
                 "next": "end"

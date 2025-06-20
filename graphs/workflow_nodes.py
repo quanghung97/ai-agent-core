@@ -6,7 +6,6 @@ from utils.error_handling import with_retry, RetryableError, NodeExecutionError
 class NodeType(Enum):
     CHAT = "chat"
     CLASSIFICATION = "classification"
-    MEMORY = "memory"
     VALIDATION = "validation"
     SEARCH = "search"
 
@@ -68,29 +67,3 @@ class WorkflowNodes:
         except Exception as e:
             raise RetryableError(f"Intent classification failed: {str(e)}")
 
-    @staticmethod
-    async def update_memory(state: Dict[str, Any]) -> Dict[str, Any]:
-        """Update conversation memory"""
-        try:
-            memory = state.get("memory", {})
-            
-            # Initialize memory with default values if empty
-            if not memory:
-                memory = {
-                    "turn_count": 0,
-                    "topics": [],  # Changed from set() to list for serialization
-                    "sentiment": "neutral",
-                    "last_intent": "",
-                    "session_data": {}
-                }
-            
-            # Update memory
-            memory["turn_count"] = memory.get("turn_count", 0) + 1
-            memory["last_intent"] = state.get("intent", "general")
-            
-            # Store updated memory
-            state["memory"] = memory
-            
-            return state
-        except Exception as e:
-            raise NodeExecutionError(f"Memory update failed: {str(e)}")
